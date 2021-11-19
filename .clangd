@@ -1,0 +1,21 @@
+CompileFlags:                     # Tweak the parse settings
+  Add: [
+    -Wno-unused-variable
+    -Wno-infinite-recursion
+    -Werror=implicit-function-declaration
+    -Wshadow
+    -Wno-shadow-field-in-constructor-modified
+    -Wno-shadow-ivar
+    -Wuninitialized
+    -Wunused-label
+    -Wunused-lambda-capture
+  ]
+
+
+Diagnostics:
+  # Tweak Clang-Tidy checks.
+  Add: []
+  Remove: []
+  CheckOptions:
+      
+    
