@@ -12,7 +12,305 @@
 #include <string>
 #include <unordered_map>
 #include <iostream>
+#include <vector>
 namespace NC {
+
+
+
+namespace dyn {
+
+
+namespace list_version {
+
+
+template<typename T>
+class BST {
+
+    struct Leaf {
+        T data;
+        std::unique_ptr<Leaf> lChild, rChild;
+        int cnt, size;
+    };
+
+
+    void __insert(std::unique_ptr<Leaf> &cur, const T &data) {
+
+        if (!cur) {
+            cur = std::make_unique<Leaf>();
+            cur->data = data;
+            cur->size = cur->cnt = 1;
+            return;
+        }
+
+        ++cur->size;
+
+        if (cur->data == data) {
+            ++cur->cnt;
+            return;
+        }
+
+        if (cur->data > data) {
+            __insert(cur->lChild, data);
+        } else {
+            __insert(cur->rChild, data);
+        }
+
+
+    }
+
+
+    template<typename Callback>
+    void __inorder(std::unique_ptr<Leaf> &cur, const Callback &callback) {
+        if (!cur) { return; }
+
+        __inorder(cur->lChild, callback);
+
+        callback(cur->data);
+
+        __inorder(cur->rChild, callback);
+
+    }
+
+    bool __exist(std::unique_ptr<Leaf> &cur, const T &val) {
+
+        if (!cur) { return false; }
+
+        if (cur->data == val) { return true; }
+
+        if (cur->data > val) {
+            return __exist(cur->lChild, val);
+        }
+
+        return __exist(cur->rChild, val);
+    }
+
+    void __do_remove(std::unique_ptr<Leaf> &node) {
+
+
+        /// just leave cnt and size away :)
+        if (!node->lChild) {
+
+            node = std::move(node->rChild);
+
+        } else if (!node->rChild) {
+
+            node = std::move(node->lChild);
+
+        } else {
+
+            Leaf *to_swap_parent = node.get();
+            Leaf *to_swap = node->lChild.get();
+
+            while (to_swap->rChild) {
+                /// go to right most
+                to_swap_parent = to_swap;
+                to_swap = to_swap->rChild.get();
+            }
+
+            node->data = to_swap->data;
+
+            if (to_swap_parent != node.get()) {
+                to_swap_parent->rChild = std::move(to_swap->lChild);
+            } else {
+                to_swap_parent->lChild = std::move(to_swap->lChild);
+            }
+
+        }
+
+
+
+    }
+
+    bool __remove(std::unique_ptr<Leaf> &cur, const T &val) {
+        if (!cur) { return false; }
+
+        if (cur->data == val) {
+            __do_remove(cur);
+            return true;
+        }
+
+        if (cur->data > val) {
+            return __remove(cur->lChild, val);
+        }
+
+        return __remove(cur->rChild, val);
+
+    }
+public:
+
+    std::unique_ptr<Leaf> root;
+    int cnt;
+
+    BST() : root(), cnt() {}
+
+
+    void insert(const T &data) {
+        __insert(root, data);
+    }
+
+    template<typename Callback>
+    void inorder(const Callback &callback) {
+        __inorder(root, callback);
+    }
+
+    bool exist(const T &val) {
+        return __exist(root, val);
+    }
+
+    bool remove(const T &val) {
+        return __remove(root, val);
+    }
+
+};
+
+
+
+
+}
+
+template<typename T>
+class BST {
+    struct leaf {
+        T data;
+        int lChild, rChild;
+        int cnt, size;
+    };
+
+    int cnt;
+    std::vector<leaf> tree;
+
+
+    void _insert(int cur, const T &data) {
+        ++tree[cur].size;
+        if (tree[cur].data == data) {
+            ++tree[cur].cnt;
+            return;
+        }
+        if (tree[cur].data > data) {
+
+            if (tree[cur].lChild) {
+                _insert(tree[cur].lChild, data);
+            } else {
+                tree.emplace_back();
+                tree[++cnt].data = data;
+                tree[cnt].size = tree[cnt].cnt = 1;
+                tree[cur].lChild               = cnt;
+            }
+
+        } else {
+
+            if (tree[cur].rChild) {
+                _insert(tree[cur].rChild, data);
+            } else {
+                tree.emplace_back();
+                tree[++cnt].data = data;
+                tree[cnt].size = tree[cnt].cnt = 1;
+                tree[cur].rChild               = cnt;
+            }
+        }
+    }
+
+    T _queryFront(int cur, const T &data, const T &found) {
+        if (tree[cur].data >= data) {
+            if (tree[cur].lChild) {
+                return _queryFront(tree[cur].lChild, data, found);
+            }
+            return found;
+        }
+        if (tree[cur].rChild) {
+
+            if (tree[cur].cnt) {
+
+                return _queryFront(tree[cur].rChild, data, tree[cur].data);
+            }
+            return _queryFront(tree[cur].rChild, data, found);
+        }
+        return tree[cur].data;
+    }
+
+    T _queryBack(int cur, const T &data, const T &found) {
+        if (tree[cur].data <= data) {
+            if (tree[cur].rChild) {
+                return _queryBack(tree[cur].rChild, data, found);
+            }
+            return found;
+        }
+        if (tree[cur].lChild) {
+
+            if (tree[cur].cnt) {
+
+                return _queryBack(tree[cur].lChild, data, tree[cur].data);
+            }
+            return _queryBack(tree[cur].lChild, data, found);
+        }
+        return tree[cur].data;
+    }
+
+    int _index(int cur, const T &data) {
+        if (cur == 0) {
+            return 0;
+        }
+        if (tree[cur].data == data) {
+            return tree[tree[cur].lChild].size;
+        }
+
+        if (data < tree[cur].data) {
+            return _index(tree[cur].lChild, data);
+        }
+
+        return _index(tree[cur].rChild, data) + tree[tree[cur].lChild].size + tree[cur].cnt;
+    }
+
+    T _atIndex(int cur, int idx) {
+        if (cur == 0) {
+            return invalid;
+        }
+        if (tree[tree[cur].lChild].size > idx) {
+            return _atIndex(tree[cur].lChild, idx);
+        }
+
+        if (tree[tree[cur].lChild].size + tree[cur].cnt > idx) {
+            return tree[cur].data;
+        }
+        return _atIndex(tree[cur].rChild, idx - (tree[tree[cur].lChild].size + tree[cur].cnt));
+    }
+
+public:
+    T invalid;
+
+    BST() : cnt(), tree(2), invalid() {}
+
+    void insert(const T &data) {
+        if (!cnt) {
+            [[unlikely]]
+            ++cnt;
+            tree[1].data = data;
+            tree[1].cnt = tree[1].size = 1;
+        } else {
+            _insert(1, data);
+        }
+    }
+
+    T front(const T &data) {
+        return _queryFront(1, data, invalid);
+    }
+
+    T back(const T &data) {
+        return _queryBack(1, data, invalid);
+    }
+
+    int index(const T &data) {
+        return _index(1, data);
+    }
+
+    int atIndex(int idx) {
+        return _atIndex(1, idx);
+    }
+};
+
+
+}
+
 
 template<int Size, typename T>
 class BST {
@@ -122,7 +420,7 @@ class BST {
 public:
     T invalid;
 
-    BST() : cnt(), tree(), invalid(){};
+    BST() : cnt(), tree(), invalid() {}
 
     void insert(const T &data) {
         if (!cnt) {

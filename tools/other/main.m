@@ -51,11 +51,23 @@ int tun(void)  {
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        int t = tun();
-        NSLog(@"%d", t);
-        int in;
-        scanf("%d", &in);
-        close(t);
+        char *text = "Hello, World!";
+        CGDirectDisplayID display = kCGDirectMainDisplay; // 1
+        CGError err = CGDisplayCapture (display); // 2
+        if (err == kCGErrorSuccess)
+        {
+            CGContextRef ctx = CGDisplayGetDrawingContext (display); // 3
+            if (ctx != NULL)
+            {
+                CGContextSelectFont (ctx, "Times-Roman", 48, kCGEncodingMacRoman);
+                CGContextSetTextDrawingMode (ctx, kCGTextFillStroke);
+                CGContextSetRGBFillColor (ctx, 1, 1, 1, 0.75);
+                CGContextSetRGBStrokeColor (ctx, 1, 1, 1, 0.75);
+                CGContextShowTextAtPoint (ctx, 40, 40, text, strlen(text)); // 4
+                sleep (4); // 5
+            }
+            CGDisplayRelease (display); // 6
+        }
     }
     return 0;
 }

@@ -6,6 +6,113 @@
 #define NITETRICHOR_SORT_HPP
 
 #include <functional>
+#include <algorithm>
+namespace AN {
+
+
+
+template<typename T, typename Comp>
+void __r_merge_sort(T arr[], T reg[], int start, int end, const Comp &comp, const int n) {
+    if (start >= end) { return; }
+
+    int len = end - start, mid = len / 2 + start;
+    int start1 = start, end1 = mid;
+    int start2 = mid + 1, end2 = end;
+    __r_merge_sort(arr, reg, start1, end1, comp, n);
+    __r_merge_sort(arr, reg, start2, end2, comp, n);
+
+    int k = start;
+    while (start1 <= end1 && start2 <= end2) {
+        reg[k++] = comp(arr[start1], arr[start2]) ? arr[start1++] : arr[start2++];
+    }
+    while (start1 <= end1) {
+        reg[k++] = arr[start1++];
+    }
+    while (start2 <= end2) {
+        reg[k++] = arr[start2++];
+    }
+    for (k = start; k <= end; k++) {
+        arr[k] = reg[k];
+    }
+
+
+//    for (int i = 0; i < n; ++i) {
+//        cout << (i == 0 ? "" : " ") << arr[i];
+//    }
+//    cout << endl;
+}
+
+template<typename T, typename Comp = std::less<T>>
+void r_merge_sort(T arr[], const int len, Comp &&comp = Comp()) {
+    T reg[len];
+    __r_merge_sort(arr, reg, 0, len - 1, std::forward<Comp>(comp), len);
+}
+
+
+template<typename Iter1 , typename Iter2, typename Iter3, typename Comp>
+inline void merge_sort_merge(Iter1 &&begin1, Iter1 &&end1, Iter2 &&begin2, Iter2 &&end2, Iter3 &&out, Comp &&comp) {
+    while (begin1 < end1 && begin2 < end2) {
+        *out++ = comp(*begin1, *begin2) ? std::move(*begin1++) : std::move(*begin2++);
+    }
+    while (begin1 < end1) {
+        *out++ = std::move(*begin1++);
+    }
+    while (begin2 < end2) {
+        *out++ = std::move(*begin2++);
+    }
+}
+
+template<typename Iter, typename Comp = std::less<typename std::iterator_traits<Iter>::value_type>>
+void merge_sort(Iter &&begin, Iter &&end, Comp &&comp = Comp()) {
+    typedef typename std::iterator_traits<Iter>::value_type value_type;
+    int len = end - begin;
+    std::vector<value_type> temp(len);
+    bool inTemp = false;
+    for (int seg = 1; seg < len; seg += seg) {
+        for (int start = 0; start < len; start += seg + seg) {
+            int low = start, mid = std::min(start + seg, len), high = std::min(start + seg + seg, len);
+
+            if (inTemp) {
+                merge_sort_merge(temp.begin() + low, temp.begin() + mid, temp.begin() + mid, temp.begin() + high, begin + low, comp);
+            } else {
+                merge_sort_merge(begin + low, begin + mid, begin + mid, begin + high, temp.begin() + low, comp);
+            }
+        }
+
+        inTemp = !inTemp;
+
+//        /// verbose print
+//        for (int i = 0; i < len; ++i) {
+//            if (i) {
+//                cout << ' ';
+//            }
+//            if (inTemp) {
+//                cout << temp[i];
+//            } else {
+//                cout << begin[i];
+//            }
+//        }
+//        cout << endl;
+
+    }
+    if (inTemp) {
+        for (int i = 0; i < len; i++) {
+            begin[i] = std::move(temp[i]);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+}
+
+
 
 namespace WN {
 

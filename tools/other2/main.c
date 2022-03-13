@@ -261,88 +261,6 @@ int hash_search(int len, const int arr[len], int key) {
     return -1;
 }
 
-void shell_sort(int n, int arr[n]) {
-    int gap = n;
-
-    do {
-        gap = gap / 2;
-        for (int i = 0; i < gap; ++i) {
-
-            for (int j = i + gap; j < n; j += gap) {
-                int k;
-                int tmp = arr[j];
-                for (k = j; k - gap >= 0 && arr[k - gap] < tmp ; k -= gap) {
-                    arr[k] = arr[k - gap];
-                }
-
-                arr[k] = tmp;
-            }
-
-        }
-
-        for (int i = 0; i < n; ++i) {
-            printf(i == 0 ? "%d" : " %d", arr[i]);
-        }
-        puts("");
-
-
-    } while (gap != 1);
-}
-
-void insert_sort(int n, int arr[n]) {
-
-    for (int i = 1; i < n; ++i) {
-        int k;
-        int tmp = arr[i];
-        for (k = i; k - 1 >= 0 && arr[k - 1] > tmp ; --k) {
-            arr[k] = arr[k - 1];
-        }
-
-        arr[k] = tmp;
-
-        for (int j = 0; j < n; ++j) {
-            printf(j == 0 ? "%d" : " %d", arr[j]);
-        }
-        puts("");
-    }
-
-}
-
-void quick_sort(int size, int arr[size], int n, int outArr[n]) {
-    // has one or none
-    if (size == 0 || size == 1) {
-        return;
-    }
-
-    // use central element as pivot
-    int  pivot = arr[0];
-    int * lCur = arr;
-    int * rCur = arr + size - 1;
-
-    while (lCur < rCur) {
-        while (lCur < rCur && *rCur >= pivot) {
-            --rCur;
-        }
-        *lCur = *rCur;
-        while (lCur < rCur && *lCur <= pivot) {
-            ++lCur;
-        }
-        *rCur = *lCur;
-    }
-    *lCur = pivot;
-
-    for (int i = 0; i < n; ++i) {
-        printf(i == 0 ? "%d" : " %d", outArr[i]);
-    }
-    puts("");
-
-    // now rCur < lCur
-    // include *rCur, so add extra 1
-    quick_sort((int) (rCur - arr), arr, n, outArr);
-    quick_sort((int) (size - (lCur - arr) - 1), lCur + 1, n, outArr);
-}
-
-
 int main(void) {
     // main entry here
 
@@ -350,24 +268,44 @@ int main(void) {
     //    freopen("OJ/out.txt", "w", stdout);
 
 
-//    int t;
-//    scanf("%d", &t);
+    int t;
+    scanf("%d", &t);
 
-//    while (t--) {
-        int n;
-        scanf("%d", &n);
+    while (t--) {
+        int m, n;
+        scanf("%d %d", &m, &n);
 
-        int arr[n];
-        for (int i = 0; i < n; ++i) {
-            scanf("%d", &arr[i]);
+        int table[m];
+
+        for (int i = 0; i < m; ++i) {
+            table[i] = -1;
         }
 
-        insert_sort(n, arr);
+        for (int i = 0; i < n; ++i) {
+            int key;
+            scanf("%d", &key);
+            hash_insert(m, table, key);
+        }
 
-//        if (t) {
-//            puts("");
-//        }
-//    }
+        /// output
+        for (int i = 0; i < m; ++i) {
+            if (table[i] >= 0) {
+                printf(i == 0 ? "%d" : " %d", table[i]);
+            } else {
+                printf(i == 0 ? "NULL" : " NULL");
+            }
+        }
+        puts("");
+
+        int k;
+        scanf("%d", &k);
+        for (int i = 0; i < k; ++i) {
+            int key;
+            scanf("%d", &key);
+            int res = hash_search(m, table, key);
+            printf(res < 0 ? "0 %d\n" : "1 %d %d\n" , find_cnt, res + 1);
+        }
+    }
 
 
     return 0;

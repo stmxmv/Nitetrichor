@@ -37,3 +37,5 @@ Temporary Items
 /build/
 /.history/
 /.cache/
+*.sublime-project
+*.sublime-workspace

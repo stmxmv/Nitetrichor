@@ -13,6 +13,7 @@ Checks: '-*, clang-analyzer-*, clang-diagnostic-*, misc-*,performance-*,moderniz
          cppcoreguidelines-pro-type-member-init,
          cppcoreguidelines-pro-type-static-cast-downcast,
          cppcoreguidelines-slicing,
+         cppcoreguidelines-virtual-class-destructor,
          google-default-arguments,
          google-explicit-constructor,
          google-runtime-operator,
@@ -20,6 +21,7 @@ Checks: '-*, clang-analyzer-*, clang-diagnostic-*, misc-*,performance-*,moderniz
          mpi-buffer-deref,
          mpi-type-mismatch,
          openmp-use-default-none,
+         -cert-dcl21-cpp,
          -modernize-use-trailing-return-type,
          -misc-non-private-member-variables-in-classes,
          -misc-no-recursion,
@@ -27,6 +29,7 @@ Checks: '-*, clang-analyzer-*, clang-diagnostic-*, misc-*,performance-*,moderniz
          -modernize-use-default-member-init,
          -modernize-avoid-c-arrays,
          -modernize-use-using,
+         -modernize-use-override,
          -readability-isolate-declaration,
          -readability-named-parameter,
          -misc-unused-using-decls,
@@ -51,3 +54,5 @@ CheckOptions:
     value:           1
   - key:             readability-identifier-length.MinimumVariableNameLength
     value:           0
+  - key:             readability-braces-around-statements.ShortStatementLines
+    value:           1

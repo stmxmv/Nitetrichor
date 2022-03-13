@@ -9,20 +9,32 @@ target_compile_definitions(Learn++ PRIVATE
 )
 
 
+
+find_package(Boost 0.1 REQUIRED timer)
+if(Boost_FOUND)
+    message("Found Boost ${Boost_VERSION_STRING}")
+    target_include_directories(Learn++ PRIVATE ${Boost_INCLUDE_DIRS} "/Users/moah/XcodeProject/NItetrichor/WNITE/metal-cpp")
+
+endif()
+
 target_link_libraries(Learn++
         PRIVATE
         Core
         LearnKit
+        ${Boost_LIBRARIES}
+        "-framework Foundation"
+        "-framework Cocoa"
 )
 
 target_compile_options(Learn++
         PRIVATE
         -O0
-        -fno-exceptions
-        -fno-rtti
 )
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    target_compile_options(Learn++ PRIVATE "-fobjc-arc")
+endif()
 
 set_target_properties(Learn++
         PROPERTIES
-        CXX_STANDARD 14
+        CXX_STANDARD 17
 )

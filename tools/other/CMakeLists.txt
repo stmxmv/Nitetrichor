@@ -15,6 +15,7 @@ set_target_properties(other
 
 target_link_libraries(other
         PRIVATE
-        "-framework Foundation"
+#        "-framework Foundation"
+#        "-framework CoreGraphics"
         Core
         )

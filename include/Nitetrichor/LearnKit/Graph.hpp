@@ -7,6 +7,8 @@
 
 #include "LearnKit/UnionFindSet.hpp"
 #include <stack>
+#include <set>
+#include <queue>
 namespace NC {
 
 
@@ -40,6 +42,130 @@ concept ATable = requires (T e) {
 
 template<typename T>
 using aedge_value_t = typename std::remove_reference_t<decltype(std::declval<T>()[0].to)>;
+
+
+template<typename Head, typename Table>
+class a_tarjan_bridge_impl {
+    typedef aedge_value_t<Table> value_type;
+
+    template<typename T>
+    using Vector = std::vector<T>;
+    Head& head;
+    Table& table; /// table must start at 2, and nil is 0
+public:
+    Vector<value_type> dfn;
+    Vector<value_type> low;
+    std::vector<std::pair<value_type, value_type>> bridges; /// the bridge edge number in table
+    int tick;
+
+    a_tarjan_bridge_impl(Head &h, Table &t) : head(h), table(t), dfn(std::size(h)), low(std::size(h)), tick() {}
+
+    void doit(int cur, int edge) {
+        dfn[cur] = low[cur] = ++tick;
+        for(auto i = head[cur]; i; i = table[i].next) {
+            auto vtx = table[i].to;
+            if (!dfn[vtx]) {
+                doit(vtx, i);
+                low[cur] = std::min(low[cur], low[vtx]);
+                if (low[vtx] > dfn[cur]) {
+                    bridges.emplace_back((i | 1) ^ 1, i | 1);
+                }
+            } else if (i != (edge ^ 1)) { /// not go back to parent's edge
+                low[cur] = std::min(low[cur], dfn[vtx]);// can be Low[i]=min(Low[i],Low[j]) only in strong connected
+            }
+        }
+    }
+
+};
+
+template<typename Head, typename Table>
+class a_tarjan_cut_vertex_impl {
+    typedef aedge_value_t<Table> value_type;
+
+    template<typename T>
+    using Vector = std::vector<T>;
+    Head& head;
+    Table& table;
+public:
+    Vector<value_type> dfn;
+    Vector<value_type> low;
+    std::set<value_type> cut;
+    int tick;
+
+    a_tarjan_cut_vertex_impl(Head &h, Table &t) : head(h), table(t), dfn(std::size(h)), low(std::size(h)), tick() {}
+
+    void doit(int cur, int parent) {
+        dfn[cur] = low[cur] = ++tick;
+        int child_num = 0;
+        for(auto i = head[cur]; i; i = table[i].next) {
+            auto vtx = table[i].to;
+            if (dfn[vtx] == 0) {
+                doit(vtx, parent);
+                low[cur] = std::min(low[cur], low[vtx]);
+                if (low[vtx] >= dfn[cur] && cur != parent) {
+                    cut.insert(cur);
+                }
+                if (cur == parent) {
+                    ++child_num;
+                }
+
+            }
+            low[cur] = std::min(low[cur], dfn[vtx]);// can be Low[i]=min(Low[i],Low[j]) only in strong connected
+        }
+        if (child_num >= 2 && cur == parent) {
+            cut.insert(cur);
+        }
+    }
+
+};
+
+template<typename Head, typename Table>
+class a_tarjan_impl {
+    typedef aedge_value_t<Table> value_type;
+
+    template<typename T>
+    using Vector = std::vector<T>;
+    Head& head;
+    Table& table;
+public:
+    typedef Vector<Vector<value_type>> component_type;
+    Vector<Vector<value_type>> component;
+    Vector<value_type> dfn;
+    Vector<value_type> low;
+    Vector<value_type> scc;
+    std::stack<value_type> stk;
+    int scc_num;
+    int tick;
+
+    a_tarjan_impl(Head &h, Table &t) : head(h), table(t), dfn(std::size(h)), low(std::size(h)), scc(std::size(h)), stk(), scc_num(), tick() {}
+
+    void doit(int n) {
+        dfn[n] = low[n] = ++tick;
+        stk.push(n);
+        for(auto i = head[n]; i; i = table[i].next) {
+            auto vtx = table[i].to;
+            if (dfn[vtx] == 0) {
+                doit(vtx);
+                low[n] = std::min(low[n], low[vtx]);
+            } else if (scc[vtx] == 0) {
+                low[n] = std::min(low[n], dfn[vtx]);// can be Low[i]=min(Low[i],Low[j]) only in strong connected
+            }
+        }
+        if (dfn[n] == low[n]) {
+            value_type top;
+            ++scc_num;
+            component.emplace_back();
+            do {
+                top = stk.top();
+                stk.pop();
+                scc[top] = scc_num;
+                component.back().push_back(top);
+                //            InComponent[j] = ComponentNumber;
+            } while (top != n);
+        }
+    }
+
+};
 
 
 template<typename Head, typename Table>
@@ -93,6 +219,10 @@ public:
         }
     }
 };
+
+
+template<typename T>
+using matrix_value_t = typename std::remove_reference_t<decltype(std::declval<T>()[0][0])>;
 
 
 template<typename Matrix>
@@ -323,11 +453,11 @@ public:
 
     inline void setNumOfVertexes(T vertexes) {
         numOfVertexes = vertexes;
-        head.resize(vertexes + 2);
+        head.resize(vertexes);
     }
 
     explicit Basic_graph1(T vertexes) noexcept
-        : table(1), cnt(), head(), numOfVertexes(vertexes), numOfEdges() {}
+        : table(1), cnt(), head(vertexes), numOfVertexes(vertexes), numOfEdges() {}
 
     inline void insert(T from, T to, T cost) {
         table.push_back({.to = to, .cost = cost, .next = head[from]});
@@ -339,9 +469,9 @@ public:
     /// \return the sum of the path, 0 if the graph is not connected.
     T evaluateMinimumSpanningTree(T start) {
         constexpr T inf = INF;
-        std::vector<T> distance(numOfVertexes + 2, inf);
+        std::vector<T> distance(numOfVertexes, inf);
         vis.clear();
-        vis.resize(numOfVertexes + 2);
+        vis.resize(numOfVertexes);
         T ret   = 0;
         T count = 0;
 
@@ -373,7 +503,7 @@ public:
             spanningTree.push_back({.from = front.from, .to = front.to, .cost = front.shortest_cost,});
             // slack
             for (auto cur = head[front.to]; cur; cur = table[cur].next) {
-                if (table[cur].cost < distance[table[cur].to]) {
+                if (!vis[table[cur].to] && table[cur].cost < distance[table[cur].to]) {
                     distance[table[cur].to] = table[cur].cost;
                     queue.emplace(front.to, table[cur].cost, table[cur].to);
                 }
@@ -476,11 +606,9 @@ public:
             vis[front.second] = true;
             for (T cur = head[front.second]; cur; cur = table[cur].next) {
                 auto edge = table[cur];
-                if (shortestPath[edge.to] > shortestPath[front.second] + edge.cost) {
+                if (!vis[edge.to] && shortestPath[edge.to] > shortestPath[front.second] + edge.cost) {
                     shortestPath[edge.to] = shortestPath[front.second] + edge.cost;
-                    if (!vis[edge.to]) {
-                        queue.emplace(shortestPath[edge.to], edge.to);
-                    }
+                    queue.emplace(shortestPath[edge.to], edge.to);
                 }
             }
         }
@@ -593,7 +721,7 @@ public:
             vis[front.second] = true;
             // slack
             for (auto cur = head[front.second]; cur; cur = table[cur].next) {
-                if (table[cur].cost < cache[table[cur].to]) {
+                if (!vis[table[cur].to] && table[cur].cost < cache[table[cur].to]) {
                     cache[table[cur].to] = table[cur].cost;
                     queue.emplace(table[cur].cost, table[cur].to);
                 }

@@ -12,6 +12,11 @@
 #include <queue>
 #include <sstream>
 
+
+#define NS_PRIVATE_IMPLEMENTATION
+#define MTL_PRIVATE_IMPLEMENTATION
+#import <Foundation/Foundation.hpp>
+
 using std::cin;
 using std::cout;
 using std::endl;

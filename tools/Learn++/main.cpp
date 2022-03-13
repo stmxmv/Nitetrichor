@@ -111,265 +111,546 @@ namespace NC {
 }// namespace NC
 
 
-template<typename T = int>
-class UnionFindSet {
-    std::vector<T> parent;
-    std::vector<T> rank;
-    static_assert(std::is_integral<T>::value, "integral require");
 
-public:
-    constexpr UnionFindSet() noexcept : parent(), rank() {}
 
-    void init(T n) noexcept {
-        parent.resize(n);
-        rank.resize(n);
-        for (T i = 0; i < n; ++i) {
-            parent[i] = i;
-        }
-    }
 
-    T find(T x) noexcept {
-        while (x != parent[x]) {
-            x = parent[x] = parent[parent[x]];
-        }
-        return x;
-        //        if (parent[x] == x) {
-        //            return x;
-        //        } else {
-        //            return parent[x] = find(parent[x]);
-        //        }
-    }
+template<typename T>
+using Vector = std::vector<T>;
 
-    void unite(T x, T y) noexcept {
-        x = find(x);
-        y = find(y);
-        if (x == y) { return; }
-        if (rank[x] < rank[y]) {
-            parent[x] = y;
+using Vectori = Vector<int>;
+
+
+//#include "exam.hpp"
+
+
+
+template<typename Iter, typename T>
+int an_low_bound(int n, Iter arr, T val) {
+    int left = 0, right = n - 1;
+    while (left <= right) {
+        int mid = (left + right) / 2;
+        if (val <= arr[mid]) {
+            right = mid - 1;
         } else {
-            parent[y] = x;
-            if (rank[x] == rank[y]) {
-                ++rank[x];
-            }
+            left = mid + 1;
         }
     }
 
-    inline bool isSame(T x, T y) noexcept { return find(x) == find(y); }
+    return left;
+}
 
-    bool isAllSame() {
-        int x = find(0);
-        for (int i = 1; i < (int)parent.size(); ++i) {
-            if (x != find(i)) {
-                return false;
-            }
-        }
-        return true;
-    }
 
-    int kindCount() {
-        int ret = 0;
-        std::unordered_set<T> set;
-        for (int i = 0; i < (int)parent.size(); ++i) {
-            int kind;
-            if (set.find(kind = find(i)) == set.end()) {
-                set.insert(kind);
-                ++ret;
-            }
+
+
+template<typename Iter, typename T>
+int _an_low_bound(int n, Iter arr, T val) {
+    int left = 0, right = n - 1;
+    while (left <= right) {
+        int mid = (left + right) / 2;
+        if (val <= arr[mid]) {
+            right = mid - 1;
+        } else {
+            left = mid + 1;
         }
-        return ret;
     }
-};
+    return left;
+}
 
 template<typename T>
-struct Edge0 {
-    T from, to, cost;
-};
-
-/// \brief store edges in a array
-template<typename T = int>
-class Basic_graph0 {
-    std::vector<Edge0<T>> edges;
-    T numOfVertexes, numOfEdges;
-
-
-    constexpr static T INF = 0x3f3f3f3f3f3f3f3f;
-
-public:
-    std::vector<Edge0<T>> spanningTree;
-
-    constexpr Basic_graph0() noexcept : edges(), numOfVertexes(), numOfEdges() {}
-
-    explicit Basic_graph0(T vertex) : edges(), numOfVertexes(vertex) {}
-
-    void clear() noexcept {
-        edges.clear();
-        numOfVertexes = 0;
-        numOfEdges = 0;
-    }
-
-    inline void setNumOfVertexes(T vertexes) { numOfVertexes = vertexes; }
-
-    inline void insert(T from, T to, T cost) {
-        edges.push_back({.from = from, .to = to, .cost = cost});
-        ++numOfEdges;
-    }
+struct an_list {
+    struct node {
+        T data;
+        std::weak_ptr<node> parent;
+        std::shared_ptr<node> child;
+        node() = default;
+        node(T data) : data(data) {}
+    };
 
 
-    /// \brief Kruskal, require findSet
-    /// \param start
-    /// \return the sum of the path
-    T evaluateMinimumSpanningTree() {
-        UnionFindSet<T> findSet;
-        T ret = 0, cnt = 0;
-        findSet.init(numOfVertexes);
-        std::sort(edges.begin(), edges.end(), [](const Edge0<T> &lhs, const Edge0<T> &rhs) {
-            return lhs.cost < rhs.cost;
-        });
+    struct wrap_iter : std::iterator<std::bidirectional_iterator_tag, T> {
+        std::shared_ptr<node> ptr;
 
-        for (T i = 0; i < numOfEdges; ++i) {
-            if (findSet.isSame(edges[i].from, edges[i].to)) {
-                // bridged
-                continue;
-            }
-            ret += edges[i].cost;
-            spanningTree.push_back({.from = edges[i].from, .to = edges[i].to, .cost = edges[i].cost});
+        wrap_iter(std::shared_ptr<node> &node) : ptr(node) {}
 
-            findSet.unite(edges[i].from, edges[i].to);
 
-            ++cnt;
-            if (cnt == numOfVertexes - 1) {
-                break;
-            }
-
+        wrap_iter& operator ++() {
+            ptr = ptr->child;
+            return *this;
         }
-        if (cnt == numOfVertexes - 1) {
+
+        wrap_iter operator ++(int) {
+            auto ret = *this;
+            ++(*this);
             return ret;
         }
-        return 0;
-    }
-};
 
-
-template<typename T>
-struct Edge1 {
-    T to, cost, next;
-};
-
-/// \brief store edges in a adjacency table
-template<typename T = int>
-class Basic_graph1 {
-    std::vector<Edge1<T>> table;// Adjacency table
-    T cnt;
-    std::vector<T> head;
-    std::vector<bool> vis;
-
-    T numOfVertexes, numOfEdges;
-
-public:
-
-    std::vector<Edge0<T>> spanningTree;
-
-    constexpr static T INF = 0x3f3f3f3f3f3f3f3f;
-
-    Basic_graph1() noexcept : table(1), cnt(), head(), numOfVertexes(), numOfEdges() {}
-
-    void clear() noexcept {
-        table.clear();
-        head.clear();
-        vis.clear();
-        spanningTree.clear();
-        cnt           = 0;
-        numOfVertexes = 0;
-    }
-
-    inline void setNumOfVertexes(T vertexes) {
-        numOfVertexes = vertexes;
-        head.resize(vertexes + 2);
-    }
-
-    explicit Basic_graph1(T vertexes) noexcept
-        : table(1), cnt(), head(), numOfVertexes(vertexes), numOfEdges() {}
-
-    inline void insert(T from, T to, T cost) {
-        table.push_back({.to = to, .cost = cost, .next = head[from]});
-        head[from] = ++cnt;
-    }
-
-    /// \brief prim, store tree's edge in spanningTree
-    /// \param start
-    /// \return the sum of the path, 0 if the graph is not connected.
-    T evaluateMinimumSpanningTree(T start) {
-        constexpr T inf = INF;
-        std::vector<T> distance(numOfVertexes + 2, inf);
-        vis.clear();
-        vis.resize(numOfVertexes + 2);
-        T ret   = 0;
-        T count = 0;
-
-        struct queue_elem {
-            T from, shortest_cost, to;
-            queue_elem(T from, T cost, T to) : from(from), shortest_cost(cost), to(to) {}
-            inline bool operator>(const queue_elem& other) const {
-                return shortest_cost > other.shortest_cost;
-            }
-        };
-
-        std::priority_queue<queue_elem,
-                            std::vector<queue_elem>,
-                            std::greater<>>
-                queue;
-        queue.emplace(start, 0, start);
-        while (!queue.empty() && count < numOfVertexes) {
-
-            auto front = queue.top();
-            queue.pop();
-            if (vis[front.to]) {
-                // already use this node
-                continue;
-            }
-
-            ++count;
-            ret += front.shortest_cost;
-            vis[front.to] = true;
-            spanningTree.push_back({.from = front.from, .to = front.to, .cost = front.shortest_cost,});
-            // slack
-            for (auto cur = head[front.to]; cur; cur = table[cur].next) {
-                if (table[cur].cost < distance[table[cur].to]) {
-                    distance[table[cur].to] = table[cur].cost;
-                    queue.emplace(front.to, table[cur].cost, table[cur].to);
-                }
-            }
+        wrap_iter& operator --() {
+            ptr = ptr->parent.lock();
+            return *this;
         }
 
-        if (count == numOfVertexes) {
+        wrap_iter operator --(int) {
+            auto ret = *this;
+            --(*this);
             return ret;
         }
-        return 0;
+
+        bool operator==(const wrap_iter &rhs) const {
+            return ptr == rhs.ptr;
+        }
+        bool operator!=(const wrap_iter &rhs) const {
+            return !(*this == rhs);
+        }
+
+        T  &operator*() {
+            return ptr->data;
+        }
+
+
+    };
+
+    std::shared_ptr<node> root;
+
+    an_list() : root(std::make_shared<node>()) {
+        root->parent = root;
+        root->child = root;
     }
+
+
+    ~an_list() {
+        root->child = nullptr;
+    }
+
+    void __insert(std::shared_ptr<node> &cur, T data) {
+
+        std::shared_ptr<node> new_node = std::make_shared<node>(data);
+
+        new_node->child = cur;
+
+        new_node->parent = cur->parent;
+
+        cur->parent.lock()->child = new_node;
+
+        cur->parent = new_node;
+    }
+
+    void insert(wrap_iter iter, T data) {
+        __insert(iter.ptr, data);
+    }
+
+    void push_back(T data) {
+        __insert(root, data);
+    }
+
+
+    wrap_iter begin() { return wrap_iter(root->child); }
+
+    wrap_iter end() { return wrap_iter(root); }
+
 };
 
+#include "exam.hpp"
 
-/// \brief use floyd algorithm
-/// \tparam Matrix must point to a matrix, don't use VLA, it will compile error
-/// \param mtx
-template<typename Matrix>
-void m_transform_adjacency_to_reachability(int n, Matrix& mtx) {
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            for (int k = 0; k < n; ++k) {
-                if (mtx[j][k] < mtx[j][i] * mtx[i][k]) {
-                    mtx[j][k] = mtx[j][i] * mtx[i][k];
-                }
-            }
+template<typename Iter>
+void an_insert_sort(int n, Iter arr) {
+
+    for (int i = 1; i < n; ++i) {
+        int k = i;
+        int tmp = arr[k];
+        for ( ; k - 1 >= 0 && arr[k - 1] > tmp; --k) {
+            arr[k] = arr[k - 1];
         }
+
+        arr[k] = tmp;
     }
 }
 
 
+template<typename Iter>
+void an_shell_sort(int n, Iter arr) {
+    int gap = n;
+    do {
+        gap = gap / 2;
+
+        for (int i = 0; i < gap; ++i) {
+
+            for (int j = i + gap; j < n; j += gap) {
+                int k = j;
+                int tmp = arr[k];
+                for ( ; k - gap >= 0 && arr[k - gap] > tmp; k -= gap) {
+                    arr[k] = arr[k - gap];
+                }
+                arr[k] = tmp;
+            }
+
+        }
+
+
+
+    } while (gap != 1);
+
+}
+
+
+template<typename Iter>
+void _an_shell_sort(int n, Iter arr) {
+    int gap = n;
+    do {
+
+        gap = gap / 2;
+        for (int i = 0; i < gap; ++i) {
+            for (int j = i + gap; j < n; j += gap) {
+                int k = j;
+                int tmp = arr[k];
+
+                for (; k - gap >= 0 && arr[k - gap] > tmp; k -= gap) {
+
+                    arr[k] = arr[k - gap];
+                }
+
+                arr[k] = tmp;
+
+            }
+        }
+
+
+    } while (gap != 1);
+
+}
+
+
+template<typename Iter>
+void _an_insert_sort(int n, Iter arr) {
+    for (int i = 1; i < n; ++i) {
+        int k = i;
+        int tmp = arr[k];
+        for (; k - 1 >= 0 && arr[k - 1] > tmp; --k) {
+            arr[k] = arr[k - 1];
+        }
+        arr[k] = tmp;
+    }
+}
+
+
+template<typename Iter>
+void an_quick_sort(int n, Iter arr) {
+
+    if (n == 0 || n == 1) { return ; }
+
+    int left = 0;
+    int right = n - 1;
+
+    int pivot = arr[0];
+
+    while (left < right) {
+
+        while (left < right && arr[right] >= pivot) {
+            --right;
+        }
+
+        arr[left] = arr[right];
+
+
+        while (left < right && arr[left] <= pivot) {
+            ++left;
+        }
+
+        arr[right] = arr[left];
+
+    }
+
+    assert(left == right);
+
+
+    arr[left] = pivot;
+
+    an_quick_sort(left, arr);
+
+    an_quick_sort(n - left - 1, arr + left + 1);
+
+}
+
+template<typename Iter>
+void _an_quick_sort(int n, Iter arr) {
+    if (n == 0 || n == 1) { return ; }
+
+
+    int left = 0, right = n - 1;
+    int pivot = arr[0];
+    while (left < right) {
+        while (left < right && arr[right] >= pivot) {
+            --right;
+        }
+
+        arr[left] = arr[right];
+
+        while (left < right && arr[left] <= pivot) {
+            ++left;
+        }
+
+        arr[right] = arr[left];
+    }
+
+    arr[left] = pivot;
+
+    _an_quick_sort(left, arr);
+
+    _an_quick_sort(n - left - 1, arr + left + 1);
+
+
+
+}
+
+template<typename Iter>
+void an_sift_down(int n, Iter arr, int start) {
+    auto val = arr[start];
+    int cur = start;
+
+    /// has child
+    while (cur * 2 + 1 < n) {
+        int child = cur * 2 + 1;
+        if (child + 1 < n && arr[child] < arr[child + 1]) {
+            ++child;
+        }
+        if (arr[child] < val) {
+            break;
+        }
+        // let the child up
+        arr[cur] = arr[child];
+        cur = child;
+    }
+    arr[cur] = val;
+}
+
+
+template<typename Iter>
+void an_sift_up(int n, Iter arr, int start) {
+    auto val = arr[start];
+    int cur = start;
+
+    /// has parent
+    while (cur > 0) {
+        int parent = (cur - 1) / 2;
+
+        if (arr[parent] > val) {
+            break;
+        }
+        // let the parent up
+        arr[cur] = arr[parent];
+        cur = parent;
+    }
+    arr[cur] = val;
+}
+
+template<typename Iter>
+void _an_sift_up(int n, Iter arr, int start) {
+    int val = arr[start];
+    int cur = start;
+
+    while (cur > 0) {
+        int parent = (cur - 1) / 2;
+
+        if (val < arr[parent]) { break; }
+
+        arr[cur] = arr[parent];
+        cur = parent;
+    }
+
+
+    arr[cur] = val;
+}
+template<typename Iter>
+void an_heap_push(int n, Iter arr) {
+    _an_sift_up(n, arr, n - 1);
+}
+
+template<typename Iter>
+void an_heap_make(int n, Iter arr) {
+    if (n <= 1) { return; }
+    for (int i = (n - 2) / 2; i >= 0; --i) {
+        an_sift_down(n ,arr, i);
+    }
+}
+
+
+template<typename Iter>
+void an_heap_pop(int n, Iter arr) {
+    std::iter_swap(arr, arr + n - 1);
+    an_sift_down(n - 1, arr, 0);
+}
+
+
+template<typename Iter>
+void _an_sift_down(int n, Iter arr, int start) {
+    int val = arr[start];
+    int cur = start;
+
+    while (cur * 2 + 1 < n) {
+        int child = cur * 2 + 1;
+        if (child + 1 < n && arr[child + 1] > arr[child] ) {
+            ++child;
+        }
+
+
+        if (val > arr[child]) { break; }
+
+        arr[cur] = arr[child];
+
+        cur = child;
+
+    }
+
+
+    arr[cur] = val;
+}
+
+
+
+
+
+template<typename Iter>
+void _an_heap_make(int n, Iter arr) {
+    if (n <= 1) { return; }
+    for (int i = (n - 2) / 2; i >= 0; --i) {
+        _an_sift_down(n, arr, i);
+    }
+}
+
+
+template<typename Iter, typename Callback>
+void an_floyd_path(int from,  int to, Iter path, Callback callback) {
+
+    if (from == to) { return; }
+
+    if (path[from][to] == 0) {
+        callback(to);
+        return;
+    }
+
+    an_floyd_path(from, path[from][to], callback);
+
+    an_floyd_path(path[from][to], to, callback);
+
+
+
+}
+
+
+template<typename String>
+struct an_kmp {
+
+    int length;
+    const String &string;
+
+    Vectori next = {-1, 0};
+
+    void make_next() {
+       for (int i = 0, j = 1; j < length;){
+           if (string[i] == string[j]) {
+               ++i, ++j;
+               next.push_back(i);
+           } else {
+               int fail = next[i];
+               if (fail < 0) {
+                   i = 0;
+                   ++j;
+                   next.push_back(0);
+               } else {
+                   i = fail;
+               }
+           }
+       }
+    }
+
+    template<typename ComString>
+    int findFirstOne(const ComString &otherString, int otherLength) noexcept {
+        if (otherLength > length) { return -1; }
+
+        for (int i = 0, j = 0; i < otherLength; ) {
+            if (otherString[i] == string[j]) {
+                ++i, ++j;
+                if (j == length) {
+                    return i - length;
+                }
+            } else {
+                int fail = next[j];
+                if (fail < 0) {
+                    j = 0;
+                    ++i;
+
+                } else {
+                    j = fail;
+                }
+
+            }
+        }
+
+        return -1;
+    }
+
+
+    template<typename ComString, typename OutIter>
+    OutIter findAll(const ComString &otherString, int otherLength, OutIter out) noexcept {
+        if (otherLength > length) { return -1; }
+
+        for (int i = 0, j = 0; i < otherLength; ) {
+            if (otherString[i] == string[j]) {
+                ++i, ++j;
+                if (j == length) {
+                    *out++ = i - length;
+                    j = next[length];
+                }
+            } else {
+                int fail = next[j];
+                if (fail < 0) {
+                    j = 0;
+                    ++i;
+
+                } else {
+                    j = fail;
+                }
+
+            }
+        }
+
+        return out;
+    }
+
+};
+
+namespace exam {
+class DisjointSet {
+    Vectori parent;
+
+public:
+    explicit DisjointSet(int n) noexcept : parent(n) {
+        for (int i = 0; i < n; ++i) {
+            parent[i] = i;
+        }
+    }
+
+
+    int find(int x) noexcept {
+        while (x != parent[x]) {
+            x = parent[x] = parent[parent[x]];
+        }
+        return x;
+    }
+
+    void unite(int x, int y) noexcept {
+        x         = find(x);
+        y         = find(y);
+        parent[x] = y;
+    }
+
+    inline bool isSame(int x, int y) noexcept { return find(x) == find(y); }
+};
+}
+
 int main() {
     // main entry here
 
-    //#define REDIRECT
+//    #define REDIRECT
 
 
 #ifdef WN_NOT_OJ
@@ -392,48 +673,49 @@ int main() {
 #endif// WN_NOT_OJ
 
 
-    typedef Basic_graph1<int> prim_graph;
-    typedef Basic_graph0<int> Kruskal_graph;
+
+    exam::DisjointSet set(10);
 
 
-    int t;
-    cin >> t;
-    while (t--) {
-        int vtx_num, edge_num;
-        cin >> vtx_num >> edge_num;
-        std::string vtx_names[vtx_num];
-        std::unordered_map<std::string, int> map;
-        for (int i = 0; i < vtx_num; ++i) {
-            cin >> vtx_names[i];
-            map[vtx_names[i]] = i;
-        }
+    set.unite(2, 3);
 
-        std::vector<std::vector<double>> mtx(vtx_num, std::vector<double>(vtx_num));
+    set.unite(3, 7);
 
-        for (int i = 0; i < edge_num; ++i) {
-            double rate;
-            std::string from_str, to_str;
-            cin >> from_str >> rate >> to_str;
-            int from = map[from_str], to = map[to_str];
-            mtx[from][to] = rate;
-        }
+    set.unite(1, 2);
 
-        m_transform_adjacency_to_reachability(vtx_num, mtx);
+    cout << set.isSame(1, 3);
 
-        for (int i = 0; i < vtx_num; ++i) {
-            if (mtx[i][i] > 1) {
-                cout << "YES" << endl;
-                goto next_test;
-            }
-        }
 
-        cout << "NO" << endl;
-
-    next_test:
-        None;
-    }
+//    Vectori vec, copy;
+//
+//    for (int i = 0; i < 100; ++i) {
+//        int rand = arc4random_uniform(100);
+//        vec.push_back(rand);
+//        copy.push_back(rand);
+//        an_heap_push(i + 1, vec.begin());
+//        std::push_heap(copy.begin(), copy.end());
+//
+//        cout << rand <<  ' ';
+//    }
+//    cout << endl;
+//
+//
+////    std::push_heap(copy.begin(), copy.end());
+//
+//    v_print(copy);
+//
+////    an_heap_push(100, vec.begin());
+//
+////    for (int i = 0; i < 100 - 1; ++i) {
+////        an_heap_pop(100 - i, vec.begin());
+////    }
+//
+//    v_print(vec);
+//
+//    assert(copy == vec);
 
 
 
     return 0;
 }
+
